@@ -35,18 +35,45 @@
       const status = document.getElementById("status");
       const err = document.getElementById("error");
 
+      const files = [
+        "Build/WebGL.data.unityweb",
+        "Build/WebGL.framework.js.unityweb",
+        "Build/WebGL.wasm.unityweb",
+      ];
+
+      // Total download size, from the headers; 0 when the host does not say.
+      let totalMb = 0;
+      Promise.all(files.map((f) => fetch(f, { method: "HEAD" })
+        .then((r) => +r.headers.get("content-length") || 0).catch(() => 0)))
+        .then((sizes) => { totalMb = sizes.reduce((a, b) => a + b, 0) / 1048576; });
+
+      // Unity reports 0..0.9 while downloading, then 0.9..1 while it unpacks
+      // the data and starts the engine; the scene start-up comes after 1.
+      function show(p) {
+        if (p >= 1) {
+          status.textContent = "Preparando la ciudad (170 000 edificios)…";
+        } else if (p >= 0.9) {
+          status.textContent = "Descomprimiendo y arrancando el motor…";
+        } else {
+          const got = p / 0.9;
+          status.textContent = totalMb > 0
+            ? "Descargando la ciudad… " + Math.round(got * totalMb) + " de " + Math.round(totalMb) + " MB"
+            : "Descargando la ciudad… " + Math.round(got * 100) + " %";
+        }
+      }
+
       createUnityInstance(canvas, {
         arguments: [],
-        dataUrl: "Build/WebGL.data.unityweb",
-        frameworkUrl: "Build/WebGL.framework.js.unityweb",
-        codeUrl: "Build/WebGL.wasm.unityweb",
+        dataUrl: files[0],
+        frameworkUrl: files[1],
+        codeUrl: files[2],
         streamingAssetsUrl: "StreamingAssets",
         companyName: "Pereira Twin",
         productName: "Pereira digital twin",
         productVersion: "0.1.0",
       }, (p) => {
         fill.style.width = Math.round(p * 90) + "%";   // the last 10 % is scene start-up
-        if (p >= 1) status.textContent = "Preparando la ciudad (170 000 edificios)…";
+        show(p);
       }).then(() => {
         fill.style.width = "100%";
         document.getElementById("loading").classList.add("done");

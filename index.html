@@ -1,44 +1,60 @@
 <!DOCTYPE html>
-<html lang="en-us">
+<html lang="es">
   <head>
     <meta charset="utf-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity Web Player | Pereira digital twin</title>
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no">
+    <title>Pereira · gemelo digital</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #101311; overflow: hidden;
+                   font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; color: #e8ece8; }
+      #unity-canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block;
+                      background: #101311; outline: none; }
+      #loading { position: fixed; inset: 0; display: flex; flex-direction: column;
+                 align-items: center; justify-content: center; gap: 14px; background: #101311;
+                 transition: opacity .4s; }
+      #loading.done { opacity: 0; pointer-events: none; }
+      #loading h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -.01em; }
+      #loading p { margin: 0; color: #9aa59d; font-size: 13px; }
+      #bar { width: min(320px, 70vw); height: 4px; border-radius: 2px; background: #243028; overflow: hidden; }
+      #fill { height: 100%; width: 0; background: #4ec28a; transition: width .15s; }
+      #error { display: none; max-width: 420px; text-align: center; color: #f0b4a8; }
+    </style>
   </head>
-  <body style="text-align: center; padding: 0; border: 0; margin: 0;">
-    <canvas id="unity-canvas" width="960" height="600" tabindex="-1" style="width: 960px; height: 600px; background: #231F20"></canvas>
-    <script src="Build/webgl.loader.js"></script>
+  <body>
+    <canvas id="unity-canvas" tabindex="-1"></canvas>
+    <div id="loading">
+      <h1>Pereira · gemelo digital</h1>
+      <div id="bar"><div id="fill"></div></div>
+      <p id="status">Cargando datos de la ciudad…</p>
+      <p id="error"></p>
+    </div>
+    <script src="Build/WebGL.loader.js"></script>
     <script>
-      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        // Mobile device style: fill the whole browser client area with the game canvas:
-        var meta = document.createElement('meta');
-        meta.name = 'viewport';
-        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
-        document.getElementsByTagName('head')[0].appendChild(meta);
+      const canvas = document.querySelector("#unity-canvas");
+      const fill = document.getElementById("fill");
+      const status = document.getElementById("status");
+      const err = document.getElementById("error");
 
-        var canvas = document.querySelector("#unity-canvas");
-        canvas.style.width = "100%";
-        canvas.style.height = "100%";
-        canvas.style.position = "fixed";
-
-        document.body.style.textAlign = "left";
-
-      }
-
-      createUnityInstance(document.querySelector("#unity-canvas"), {
+      createUnityInstance(canvas, {
         arguments: [],
-        dataUrl: "Build/webgl.data.unityweb",
-        frameworkUrl: "Build/webgl.framework.js.unityweb",
-        codeUrl: "Build/webgl.wasm.unityweb",
+        dataUrl: "Build/WebGL.data.unityweb",
+        frameworkUrl: "Build/WebGL.framework.js.unityweb",
+        codeUrl: "Build/WebGL.wasm.unityweb",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "Pereira Twin",
         productName: "Pereira digital twin",
         productVersion: "0.1.0",
-        // matchWebGLToCanvasSize: false, // Uncomment this to separately control WebGL canvas render size and DOM element size.
-        // devicePixelRatio: 1, // Uncomment this to override low DPI rendering on high DPI displays.
-      }).then((unityInstance) => {
-      }).catch((message) => {
-        alert(message);
+      }, (p) => {
+        fill.style.width = Math.round(p * 90) + "%";   // the last 10 % is scene start-up
+        if (p >= 1) status.textContent = "Preparando la ciudad (170 000 edificios)…";
+      }).then(() => {
+        fill.style.width = "100%";
+        document.getElementById("loading").classList.add("done");
+      }).catch((e) => {
+        status.style.display = "none";
+        err.style.display = "block";
+        err.textContent = "No se pudo iniciar el visor. Se necesita un navegador con WebGL 2 " +
+                          "y memoria libre suficiente. Detalle: " + e;
       });
     </script>
   </body>
